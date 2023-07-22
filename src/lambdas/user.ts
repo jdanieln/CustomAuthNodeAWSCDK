@@ -10,20 +10,20 @@ const gravatar = require('gravatar');
 import * as AWS from "aws-sdk";
 const db = new AWS.DynamoDB.DocumentClient();
 const { v4: uuidv4 } = require('uuid');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { hashSync } = bcrypt;
 const passwordHash = require('password-hash');
 
 const saltRounds = 10;
 
 const USER_TABLE_NAME = process.env.USER_TABLE_NAME || "";
-const USER_TABLE_PRIMARY_KEY = process.env.PRIMARY_KEY || "";
+const USER_TABLE_PRIMARY_KEY = process.env.USER_TABLE_PRIMARY_KEY || "";
 const SECRET = process.env.SECRET || "ZB_[}&2wERPy7|J"
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "ZB_[}&2wERPy7|J.."
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 900
 const REFRESH_JWT_EXPIRES_IN = '720h'
 
-exports.create = async function(event: any) {
+exports.register = async function(event: any) {
     const { body } = event;
 
     console.log('event', event);
@@ -134,7 +134,7 @@ exports.token = async function(event: any) {
         }
 
 
-        const validPassword = passwordHash.verify(password, user.password);
+        const validPassword = bcrypt.compare(password, user.password);
 
 
         if (!validPassword) {
