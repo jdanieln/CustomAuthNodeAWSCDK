@@ -1,0 +1,38 @@
+{
+  "name": "custom_auth_node_awscdk",
+  "version": "0.1.0",
+  "bin": {
+    "custom_auth_node_awscdk": "src/bin/custom_auth_node_awscdk.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc -w",
+    "build:prepare": "npm install --prefix src/lambdas",
+    "build:prod": "tsc && cp src/lambdas/package.json build/lambdas/package.json && cd build/lambdas/ && npm install --only=production",
+    "clearbuildcache": "rm -rf ./build && rm -rf ./bundles",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "cdk": "cdk",
+    "cdk:bootstrap": "cdk bootstrap -y -o templates",
+    "cdk:synth": "cdk synth -y -o templates",
+    "cdk:diff": "cdk diff -y -o templates",
+    "cdk:deploy": "cdk deploy -y -o templates --all",
+    "cdk:destroy": "cdk destroy -y -o templates --all"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.5.2",
+    "@types/node": "10.17.27",
+    "@types/prettier": "2.6.0",
+    "aws-cdk": "2.29.1",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.4",
+    "ts-node": "^10.8.1",
+    "typescript": "~3.9.7"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.370.0",
+    "aws-cdk-lib": "2.29.1",
+    "constructs": "^10.0.0",
+    "dotenv": "^16.3.1"
+  }
+}

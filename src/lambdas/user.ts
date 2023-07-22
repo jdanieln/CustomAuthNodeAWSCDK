@@ -1,0 +1,1 @@
+exports.create = async function(event: any) { }
