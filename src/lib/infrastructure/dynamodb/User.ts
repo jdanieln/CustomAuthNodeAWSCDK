@@ -1,6 +1,7 @@
 import {Construct} from "constructs";
 import {AttributeType, Table} from "aws-cdk-lib/aws-dynamodb";
 import * as cdk from 'aws-cdk-lib';
+
 export interface TableProps {
     prefix: string;
     context: Construct;

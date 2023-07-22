@@ -1,20 +1,27 @@
 import { response } from './services/response.service';
-const createUserSchema = require('./validations/CreateUserSchema');
+const userSchema = require('./validations/UserSchema');
 
+const authService = require('./services/auth.service');
 import { ErrorsService } from './services/errors.service';
 import {StatusCodes} from "http-status-codes";
 const errorsService = new ErrorsService();
 
+const gravatar = require('gravatar');
 import * as AWS from "aws-sdk";
 const db = new AWS.DynamoDB.DocumentClient();
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
 const { hashSync } = bcrypt;
+const passwordHash = require('password-hash');
 
 const saltRounds = 10;
 
 const USER_TABLE_NAME = process.env.USER_TABLE_NAME || "";
 const USER_TABLE_PRIMARY_KEY = process.env.PRIMARY_KEY || "";
+const SECRET = process.env.SECRET || "ZB_[}&2wERPy7|J"
+const REFRESH_SECRET = process.env.REFRESH_SECRET || "ZB_[}&2wERPy7|J.."
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 900
+const REFRESH_JWT_EXPIRES_IN = '720h'
 
 exports.create = async function(event: any) {
     const { body } = event;
@@ -29,7 +36,7 @@ exports.create = async function(event: any) {
 
     const item = typeof body == 'object' ? body : JSON.parse(body);
 
-    const { error } = createUserSchema.validate(item);
+    const { error } = userSchema.validate(item);
 
     if(error) {
         return response(StatusCodes.UNPROCESSABLE_ENTITY, {
@@ -84,4 +91,86 @@ exports.create = async function(event: any) {
     }
 }
 
-exports.token = async function(event: any) { }
+exports.token = async function(event: any) {
+    const { body } = event;
+
+    if (!body) {
+        return response(StatusCodes.BAD_REQUEST, {
+            message: errorsService.INVALID_BODY_PARAMS
+        });
+    }
+
+    const item = typeof body == 'object' ? body : JSON.parse(body);
+
+    const { error } = userSchema.validate(item);
+
+    if(error) {
+        return response(StatusCodes.UNPROCESSABLE_ENTITY, {
+            message: error
+        });
+    }
+
+    const {
+        userName,
+        password
+    } = item;
+
+    const params = {
+        TableName: USER_TABLE_NAME,
+        FilterExpression: 'userName = :userNameValue',
+        ExpressionAttributeValues: {
+            ':userNameValue': userName
+        }
+    };
+
+    try {
+        const userResponse: any = await db.scan(params).promise();
+        const user = userResponse.Items[0];
+
+        if(!user) {
+            return response(StatusCodes.UNAUTHORIZED, {
+                message: errorsService.INCORRECT_CREDENTIALS
+            });
+        }
+
+
+        const validPassword = passwordHash.verify(password, user.password);
+
+
+        if (!validPassword) {
+            return response(StatusCodes.UNAUTHORIZED, {
+                message: errorsService.INCORRECT_CREDENTIALS
+            });
+        }
+
+        let userData: any =  {
+            userId: user.userId
+        };
+
+
+        const photo = gravatar.url(userName, {s: '100', r: 'x', d: 'retro'}, true);
+
+        const { token, refreshToken } = authService.generateTokens({
+            userData,
+            SECRET,
+            REFRESH_SECRET,
+            JWT_EXPIRES_IN,
+            REFRESH_JWT_EXPIRES_IN
+        });
+
+        return response(StatusCodes.OK, {
+            token,
+            refreshToken,
+            user: {
+                userName,
+                photo,
+            }
+        });
+
+    } catch (dbError) {
+        console.log('login | dbError:', dbError);
+        return response(StatusCodes.INTERNAL_SERVER_ERROR, {
+            message: dbError
+        });
+    }
+}
