@@ -40,8 +40,9 @@ export class ServerlessStack extends Stack {
             handler: 'user.token',
             environment: {
                 USER_TABLE_NAME: props.USER_TABLE_NAME
-            }
+            },
         });
+
 
         this.healthCheck = new lambda.Function(scope, 'health-check', {
             runtime: this.runtime,
