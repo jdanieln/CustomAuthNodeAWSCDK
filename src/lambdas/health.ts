@@ -1,0 +1,1 @@
+exports.check = async function(event: any) { }
